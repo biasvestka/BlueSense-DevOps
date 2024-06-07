@@ -1,0 +1,66 @@
+﻿@model IEnumerable<BlueSense.Models.LeituraSensor>
+
+@{
+    ViewData["Title"] = "Analise";
+}
+
+<h1>Analise de dados dos sensores</h1>
+<p>Lista de relatório das leituras dos sensores</p>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Protocolo)
+            </th>
+            <th>
+                Data e Hora
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Local)
+            </th>
+            <th>
+                Identificado
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Navio)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Rota)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Protocolo)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.DataHora)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Local)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Valor)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Navio.Nome)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Rota.Nome)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.ID">Edit</a> |
+                <a asp-action="Details" asp-route-id="@item.ID">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.ID">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

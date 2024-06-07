@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  bluesense:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      - oracledb
+    volumes:
+      - app-data:/app/data
+      - dataprotection-keys:/home/appuser/.aspnet/DataProtection-Keys
+    networks:
+      - bluesense-network
+
+  oracledb:
+    image: gvenzl/oracle-xe:18.4.0-slim
+    ports:
+      - "1521:1521"
+    environment:
+      - ORACLE_PASSWORD=051204
+      - ORACLE_ALLOW_REMOTE=true
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+    networks:
+      - bluesense-network
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'SELECT 1' | /opt/oracle/product/18c/dbhomeXE/bin/sqlplus -s SYSTEM/051204@localhost:1521/XE"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  oracle-data:
+  app-data:
+  dataprotection-keys:
+
+networks:
+  bluesense-network:
+    driver: bridge
