@@ -1,32 +1,42 @@
-# Usar a imagem oficial do .NET SDK para construir a aplicaÁ„o
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+# Stage de build
+FROM mcr.microsoft.com/dotnet/sdk:latest AS build
 WORKDIR /app
+ENV PATH="$PATH:/usr/share/dotnet"
 
-# Vari·veis de build
+# Instala a ferramenta dotnet-ef globalmente
+RUN dotnet tool install --global dotnet-ef --version 8.0.6
+
 ARG BUILD_CONFIGURATION=Release
-ENV ASPNETCORE_ENVIRONMENT=Development
 
-# Copiar o arquivo .csproj e restaurar as dependÍncias
+# Copia o arquivo de projeto e restaura as depend√™ncias
 COPY BlueSense.csproj ./BlueSense/
 RUN dotnet restore ./BlueSense/BlueSense.csproj
 
-# Copiar o restante do cÛdigo da aplicaÁ„o e construir a release
+# Copia o restante do c√≥digo e faz o build
 COPY . ./BlueSense/
 WORKDIR /app/BlueSense
-RUN dotnet publish -c $BUILD_CONFIGURATION -o out
+RUN dotnet publish -c $BUILD_CONFIGURATION -o /app/out
 
-# Usar a imagem oficial do ASP.NET Core runtime otimizada para produÁ„o
+# Stage de runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
-# Adicionar um usu·rio n„o root
+# Instala a ferramenta dotnet-ef globalmente
+# RUN dotnet tool install --global dotnet-ef --version 8.0.6
+
+# Adiciona um usu√°rio n√£o root
 RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
+
+# Configura o diret√≥rio para as chaves de prote√ß√£o de dados e ajusta permiss√µes
+RUN mkdir -p /home/appuser/.aspnet/DataProtection-Keys \
+    && chown -R appuser /home/appuser/.aspnet
+
 USER appuser
 
-# Copiar os bin·rios da aplicaÁ„o do est·gio de build
-COPY --from=build /app/BlueSense/out .
+# Configura a URL de escuta
+ENV ASPNETCORE_URLS=http://+:5232
 
-# Persistir dados no volume (opcional)
-VOLUME ["/app/data"]
+# Copia os bin√°rios da aplica√ß√£o do stage de build
+COPY --from=build /app/out .
 
 ENTRYPOINT ["dotnet", "BlueSense.dll"]
