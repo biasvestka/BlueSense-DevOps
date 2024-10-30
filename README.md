@@ -36,7 +36,4 @@ O projeto está organizado nos seguintes diretórios principais:
    git clone https://github.com/seuusuario/BlueSense01.git
    cd BlueSense01/BlueSense01/BlueSense````
 
-2. Build de container do Docker
-  ```bash
-  docker-compose up --build
-  ```
+2. Build da aplicação.
