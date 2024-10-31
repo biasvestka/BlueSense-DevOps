@@ -1,0 +1,93 @@
+# Nome da pipeline para fácil identificação
+name: Build-CI-CD-Pipeline
+
+# Disparadores: define para iniciar a pipeline a cada push
+trigger:
+  branches:
+    include:
+      - main
+
+# Fases de trabalho
+jobs:
+- job: Build
+  displayName: "Build e Deploy para .NET 8"
+
+  # Definindo o pool de agentes (self-hosted ou Microsoft-hosted)
+  pool:
+    vmImage: 'windows-latest'  # Pode mudar para 'self-hosted' se usar um agente próprio
+
+  steps:
+  # Passo para definir o SDK .NET 8
+  - task: UseDotNet@2
+    displayName: 'Instalar SDK .NET 8'
+    inputs:
+      packageType: 'sdk'
+      version: '8.0.x'  # Garante que está usando a versão 8 estável
+      installationPath: $(Agent.ToolsDirectory)/dotnet
+
+  # Restauração de pacotes NuGet com log detalhado
+  - task: NuGetToolInstaller@1
+    displayName: 'Instalar NuGet'
+    inputs:
+      versionSpec: 'latest'
+
+  - task: NuGetCommand@2
+    displayName: 'Restaurar pacotes NuGet'
+    inputs:
+      command: 'restore'
+      restoreSolution: '**/*.sln'
+      feedsToUse: 'select'
+      msbuildVersion: '17.0'  # Certifique-se que a versão é compatível
+      verbosityRestore: 'Detailed'
+
+  # Passo para construir a solução
+  - task: DotNetCoreCLI@2
+    displayName: 'Compilar a solução'
+    inputs:
+      command: 'build'
+      projects: '**/*.sln'
+      arguments: '--configuration Release'
+
+  # Passo para execução de testes (opcional)
+  - task: DotNetCoreCLI@2
+    displayName: 'Executar Testes'
+    inputs:
+      command: 'test'
+      projects: '**/*Tests/*.csproj'
+      arguments: '--configuration Release --no-build'
+
+  # Publicação de artefatos (opcional, para uso em CD)
+  - publish: $(Build.ArtifactStagingDirectory)
+    displayName: 'Publicar Artefatos'
+    artifact: drop
+
+  # Configuração de liberação, usando Azure App Service como exemplo
+- job: Deploy
+  displayName: "Deploy para Azure Web App"
+
+  # Configurar para deploy em Azure App Service
+  pool:
+    vmImage: 'windows-latest'
+
+  # Variáveis do Azure para o Deploy
+  variables:
+    azureSubscription: 'Azure for Students - dudu'
+    appServiceName: 'planBlueSense'
+    resourceGroupName: 'rg-app-bluesense'
+
+  steps:
+  - task: UseDotNet@2
+    displayName: 'Instalar SDK .NET 8 no Deploy'
+    inputs:
+      packageType: 'sdk'
+      version: '8.0.x'
+      installationPath: $(Agent.ToolsDirectory)/dotnet
+
+  # Login no Azure (necessário para deploy)
+  - task: AzureCLI@2
+    inputs:
+      azureSubscription: $(azureSubscription)
+      scriptType: 'ps'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        az webapp up --name $(appServiceName) --resource-group $(resourceGroupName) --sku B1
